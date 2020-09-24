@@ -1,15 +1,41 @@
+#![allow(unused_imports)]
+
 use std::convert::{From, Into};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+use lazy_static::lazy_static;
+use paste::paste;
 use rust_decimal::prelude::*;
 use rust_decimal_macros::*;
+
+pub trait Currency {
+    fn decimal_value(&self) -> &Decimal;
+
+    fn is_zero(&self) -> bool;
+
+    fn is_negative(&self) -> bool;
+
+    fn is_positive(&self) -> bool;
+
+    fn code(&self) -> &'static str;
+
+    fn number(&self) -> &'static str;
+
+    fn exponent(&self) -> u32;
+}
 
 #[macro_export]
 macro_rules! impl_money {
     ($(#[$derive:meta])* $name:ident, $code:expr, $number:expr, $exponent:expr, $format:literal) => {
+        paste! {
+            lazy_static! {
+                pub static ref [<$name:upper _MIN>]: Decimal = Decimal::new(1, $exponent);
+            }
+        }
+
         // this line of the macro causes the rust analyzer's formatter to break
-        $(#[$derive])*
+        // $(#[$derive])*
         #[derive(Eq, PartialEq, Debug, Copy, Clone)]
         pub struct $name {
             kind: &'static str,
@@ -37,22 +63,6 @@ macro_rules! impl_money {
         impl $name {
             pub fn new(value: i64) -> Self {
                 Self::from_major(value)
-            }
-
-            pub fn decimal_value(&self) -> &Decimal {
-                &self.value
-            }
-
-            pub fn is_zero(&self) -> bool {
-                self.value.is_zero()
-            }
-
-            pub fn is_negative(&self) -> bool {
-                self.value.is_sign_negative() && !self.value.is_zero()
-            }
-
-            pub fn is_positive(&self) -> bool {
-                self.value.is_sign_positive() && !self.value.is_zero()
             }
 
             pub fn from_minor(value: i64) -> Self {
@@ -121,13 +131,14 @@ macro_rules! impl_money {
                     .collect();
 
                 // Add leftovers to the first parties.
-                let min_value = Decimal::new(1, $exponent);
                 for m in &mut monies {
                     if remainder.is_zero() {
                         break;
                     }
-                    m.value += min_value;
-                    remainder -= min_value;
+                    paste! {
+                        m.value += *[<$name:upper _MIN>];
+                        remainder -= *[<$name:upper _MIN>];
+                    }
                 }
                 Some(monies)
             }
@@ -152,8 +163,7 @@ macro_rules! impl_money {
                     .map(|r| {
                         let decimal_ratio = Decimal::from(*r);
                         let mut share = self.value.checked_mul(decimal_ratio)?;
-                        share = share
-                            .checked_div(sum)?;
+                        share = share.checked_div(sum)?;
                         share.rescale($exponent);
                         total = total.checked_add(share)?;
                         Some(share.into())
@@ -166,26 +176,45 @@ macro_rules! impl_money {
                     return Some(monies);
                 }
 
-                let min_value = Decimal::new(1, $exponent);
                 for m in &mut monies {
                     if remainder.is_zero() {
                         break;
                     }
-                    m.value += min_value;
-                    remainder -= min_value;
+                    paste! {
+                        m.value += *[<$name:upper _MIN>];
+                        remainder -= *[<$name:upper _MIN>];
+                    }
                 }
                 Some(monies)
             }
+        }
 
-            pub fn code(&self) -> &'static str {
+        impl Currency for $name {
+            fn decimal_value(&self) -> &Decimal {
+                &self.value
+            }
+
+            fn is_zero(&self) -> bool {
+                self.value.is_zero()
+            }
+
+            fn is_negative(&self) -> bool {
+                self.value.is_sign_negative() && !self.value.is_zero()
+            }
+
+            fn is_positive(&self) -> bool {
+                self.value.is_sign_positive() && !self.value.is_zero()
+            }
+
+            fn code(&self) -> &'static str {
                 self.kind
             }
 
-            pub fn number(&self) -> &'static str {
+            fn number(&self) -> &'static str {
                 $number
             }
 
-            pub fn exponent(&self) -> u32 {
+            fn exponent(&self) -> u32 {
                 $exponent
             }
         }
@@ -348,6 +377,9 @@ mod test {
         // compiler error
         // let unknown = one_dollar + one_bitcoin;
     }
+
+    #[test]
+    fn it_accepts_other_derives() {}
 
     #[test]
     fn it_handles_is_zero() {
