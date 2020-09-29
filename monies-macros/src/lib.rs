@@ -35,7 +35,7 @@ macro_rules! impl_money {
         }
 
         // this line of the macro causes the rust analyzer's formatter to break
-        // $(#[$derive])*
+        $(#[$derive])*
         #[derive(Eq, PartialEq, Debug, Copy, Clone)]
         pub struct $name {
             kind: &'static str,
