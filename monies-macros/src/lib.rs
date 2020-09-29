@@ -7,7 +7,19 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use lazy_static::lazy_static;
 use paste::paste;
 use rust_decimal::prelude::*;
-use rust_decimal_macros::*;
+
+pub mod prelude {
+    pub use crate::impl_money;
+    pub use crate::Currency;
+
+    pub use std::convert::{From, Into};
+    pub use std::fmt;
+    pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
+    pub use lazy_static::lazy_static;
+    pub use paste::paste;
+    pub use rust_decimal::prelude::*;
+}
 
 pub trait Currency {
     fn decimal_value(&self) -> &Decimal;
@@ -37,26 +49,17 @@ macro_rules! impl_money {
         // this line of the macro causes the rust analyzer's formatter to break
         $(#[$derive])*
         #[derive(Eq, PartialEq, Debug, Copy, Clone)]
-        pub struct $name {
-            kind: &'static str,
-            value: Decimal,
-        }
+        pub struct $name(Decimal);
 
         impl Default for $name {
             fn default() -> Self {
-                Self {
-                    kind: $code,
-                    value: Decimal::default(),
-                }
+                Self(Decimal::default())
             }
         }
 
         impl From<Decimal> for $name {
             fn from(other: Decimal) -> $name {
-                Self {
-                    kind: $code,
-                    value: other,
-                }
+                Self(other)
             }
         }
 
@@ -75,38 +78,38 @@ macro_rules! impl_money {
 
             /// This uses rust_decimal's Bankers Rounding Strategy
             pub fn round(&self) -> Self {
-                self.value.round_dp($exponent).into()
+                self.0.round_dp($exponent).into()
             }
 
             pub fn round_up(&self) -> Self {
-                self.value
+                self.0
                     .round_dp_with_strategy($exponent, RoundingStrategy::RoundUp)
                     .into()
             }
 
             pub fn round_down(&self) -> Self {
-                self.value
+                self.0
                     .round_dp_with_strategy($exponent, RoundingStrategy::RoundDown)
                     .into()
             }
             pub fn round_half_up(&self) -> Self {
-                self.value
+                self.0
                     .round_dp_with_strategy($exponent, RoundingStrategy::RoundHalfUp)
                     .into()
             }
 
             pub fn round_half_down(&self) -> Self {
-                self.value
+                self.0
                     .round_dp_with_strategy($exponent, RoundingStrategy::RoundHalfDown)
                     .into()
             }
 
             pub fn checked_add(&self, rhs: Self) -> Option<Self> {
-                self.value.checked_add(rhs.value).map(Into::into)
+                self.0.checked_add(rhs.0).map(Into::into)
             }
 
             pub fn checked_sub(&self, rhs: Self) -> Option<Self> {
-                self.value.checked_sub(rhs.value).map(Into::into)
+                self.0.checked_sub(rhs.0).map(Into::into)
             }
 
             pub fn split(&self, n: u64) -> Option<Vec<Self>> {
@@ -118,10 +121,10 @@ macro_rules! impl_money {
                 // not overflow or have 0 as the divisor.
                 // we use decimal.rescale here because we want to truncate, essentially rounding
                 // down.  Rescaling in the decimal library is cheaper than rounding
-                let mut quotient = self.value / Decimal::from(n);
+                let mut quotient = self.0 / Decimal::from(n);
                 quotient.rescale($exponent);
 
-                let mut remainder = self.value;
+                let mut remainder = self.0;
                 let mut monies: Vec<Self> = (0..n)
                     .into_iter()
                     .map(|_| {
@@ -136,7 +139,7 @@ macro_rules! impl_money {
                         break;
                     }
                     paste! {
-                        m.value += *[<$name:upper _MIN>];
+                        m.0 += *[<$name:upper _MIN>];
                         remainder -= *[<$name:upper _MIN>];
                     }
                 }
@@ -162,7 +165,7 @@ macro_rules! impl_money {
                     .iter()
                     .map(|r| {
                         let decimal_ratio = Decimal::from(*r);
-                        let mut share = self.value.checked_mul(decimal_ratio)?;
+                        let mut share = self.0.checked_mul(decimal_ratio)?;
                         share = share.checked_div(sum)?;
                         share.rescale($exponent);
                         total = total.checked_add(share)?;
@@ -171,7 +174,7 @@ macro_rules! impl_money {
                     .collect::<Option<Vec<Self>>>()?;
 
                 // Calculate leftover value and divide to first parties.
-                let mut remainder = self.value - total;
+                let mut remainder = self.0 - total;
                 if remainder.is_zero() {
                     return Some(monies);
                 }
@@ -181,7 +184,7 @@ macro_rules! impl_money {
                         break;
                     }
                     paste! {
-                        m.value += *[<$name:upper _MIN>];
+                        m.0 += *[<$name:upper _MIN>];
                         remainder -= *[<$name:upper _MIN>];
                     }
                 }
@@ -191,23 +194,23 @@ macro_rules! impl_money {
 
         impl Currency for $name {
             fn decimal_value(&self) -> &Decimal {
-                &self.value
+                &self.0
             }
 
             fn is_zero(&self) -> bool {
-                self.value.is_zero()
+                self.0.is_zero()
             }
 
             fn is_negative(&self) -> bool {
-                self.value.is_sign_negative() && !self.value.is_zero()
+                self.0.is_sign_negative() && !self.0.is_zero()
             }
 
             fn is_positive(&self) -> bool {
-                self.value.is_sign_positive() && !self.value.is_zero()
+                self.0.is_sign_positive() && !self.0.is_zero()
             }
 
             fn code(&self) -> &'static str {
-                self.kind
+                $code
             }
 
             fn number(&self) -> &'static str {
@@ -227,59 +230,57 @@ macro_rules! impl_money {
 
         impl Ord for $name {
             fn cmp(&self, other: &$name) -> std::cmp::Ordering {
-                self.value.cmp(&other.value)
+                self.0.cmp(&other.0)
             }
         }
 
         impl fmt::Display for $name {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(f, $format, self.value)
+                write!(f, $format, self.0)
             }
         }
 
         impl Add for $name {
             type Output = $name;
             fn add(self, other: $name) -> $name {
-                (self.value + other.value).into()
+                (self.0 + other.0).into()
             }
         }
 
         impl AddAssign for $name {
             fn add_assign(&mut self, other: Self) {
-                self.value = self.value + other.value;
+                self.0 = self.0 + other.0;
             }
         }
 
         impl Sub for $name {
             type Output = $name;
             fn sub(self, other: $name) -> $name {
-                (self.value - other.value).into()
+                (self.0 - other.0).into()
             }
         }
 
         impl SubAssign for $name {
             fn sub_assign(&mut self, other: Self) {
-                self.value = self.value - other.value;
+                self.0 = self.0 - other.0;
             }
         }
 
-        impl_mul_div!(isize, $name, $exponent);
-        impl_mul_div!(i32, $name, $exponent);
-        impl_mul_div!(i64, $name, $exponent);
-        impl_mul_div!(usize, $name, $exponent);
-        impl_mul_div!(u32, $name, $exponent);
-        impl_mul_div!(u64, $name, $exponent);
+        impl_money!(@impl_mul_div isize, $name, $exponent);
+        impl_money!(@impl_mul_div i32, $name, $exponent);
+        impl_money!(@impl_mul_div i64, $name, $exponent);
+        impl_money!(@impl_mul_div usize, $name, $exponent);
+        impl_money!(@impl_mul_div u32, $name, $exponent);
+        impl_money!(@impl_mul_div u64, $name, $exponent);
     };
-}
 
-#[allow(unused_macros)]
-macro_rules! impl_mul_div {
-    ($type:ty, $name:ident, $exponent:expr) => {
+    // remove @ for formatting.  Yay
+    (@impl_mul_div $type:ty, $name:ident, $exponent:expr) => {
         impl Mul<$type> for $name {
             type Output = $name;
 
             fn mul(self, rhs: $type) -> $name {
-                (self.value * Decimal::from(rhs)).into()
+                (self.0 * Decimal::from(rhs)).into()
             }
         }
 
@@ -287,13 +288,13 @@ macro_rules! impl_mul_div {
             type Output = $name;
 
             fn mul(self, rhs: $name) -> Self::Output {
-                (Decimal::from(self) * rhs.value).into()
+                (Decimal::from(self) * rhs.0).into()
             }
         }
 
         impl MulAssign<$type> for $name {
             fn mul_assign(&mut self, rhs: $type) {
-                self.value = (self.value * Decimal::from(rhs));
+                self.0 = (self.0 * Decimal::from(rhs));
             }
         }
 
@@ -301,7 +302,7 @@ macro_rules! impl_mul_div {
             type Output = $name;
 
             fn div(self, rhs: $type) -> Self::Output {
-                (self.value / Decimal::from(rhs))
+                (self.0 / Decimal::from(rhs))
                     .round_dp_with_strategy($exponent, RoundingStrategy::BankersRounding)
                     .into()
             }
@@ -311,7 +312,7 @@ macro_rules! impl_mul_div {
             type Output = $name;
 
             fn div(self, rhs: $name) -> Self::Output {
-                (Decimal::from(self) / rhs.value)
+                (Decimal::from(self) / rhs.0)
                     .round_dp_with_strategy($exponent, RoundingStrategy::BankersRounding)
                     .into()
             }
@@ -319,7 +320,7 @@ macro_rules! impl_mul_div {
 
         impl DivAssign<$type> for $name {
             fn div_assign(&mut self, rhs: $type) {
-                self.value = (self.value / Decimal::from(rhs))
+                self.0 = (self.0 / Decimal::from(rhs))
                     .round_dp_with_strategy($exponent, RoundingStrategy::BankersRounding);
             }
         }
