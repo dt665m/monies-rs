@@ -10,6 +10,11 @@ use num_traits::{CheckedAdd, CheckedSub, Zero};
 use paste::paste;
 use rust_decimal::prelude::*;
 
+pub mod preldue {
+    pub use super::impl_money;
+    pub use paste::paste;
+}
+
 #[macro_export]
 macro_rules! impl_money {
     ($(#[$derive:meta])* $name:ident, $code:expr, $number:expr, $exponent:expr, $format:literal) => {
