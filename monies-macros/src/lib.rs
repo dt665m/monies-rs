@@ -1,48 +1,22 @@
 #![allow(unused_imports)]
+use monies::Currency;
 
 use std::convert::{From, Into};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use lazy_static::lazy_static;
+use num_traits::{CheckedAdd, CheckedSub, Zero};
 use paste::paste;
 use rust_decimal::prelude::*;
-
-pub mod prelude {
-    pub use crate::impl_money;
-    pub use crate::Currency;
-
-    pub use std::convert::{From, Into};
-    pub use std::fmt;
-    pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-
-    pub use lazy_static::lazy_static;
-    pub use paste::paste;
-    pub use rust_decimal::prelude::*;
-}
-
-pub trait Currency {
-    fn decimal_value(&self) -> &Decimal;
-
-    fn is_zero(&self) -> bool;
-
-    fn is_negative(&self) -> bool;
-
-    fn is_positive(&self) -> bool;
-
-    fn code(&self) -> &'static str;
-
-    fn number(&self) -> &'static str;
-
-    fn exponent(&self) -> u32;
-}
 
 #[macro_export]
 macro_rules! impl_money {
     ($(#[$derive:meta])* $name:ident, $code:expr, $number:expr, $exponent:expr, $format:literal) => {
+        // this is used for allocs so we don't need to make a new decimal each time
         paste! {
             lazy_static! {
-                pub static ref [<$name:upper _MIN>]: Decimal = Decimal::new(1, $exponent);
+                static ref [<$name:upper _MIN>]: Decimal = Decimal::new(1, $exponent);
             }
         }
 
@@ -102,14 +76,6 @@ macro_rules! impl_money {
                 self.0
                     .round_dp_with_strategy($exponent, RoundingStrategy::RoundHalfDown)
                     .into()
-            }
-
-            pub fn checked_add(&self, rhs: Self) -> Option<Self> {
-                self.0.checked_add(rhs.0).map(Into::into)
-            }
-
-            pub fn checked_sub(&self, rhs: Self) -> Option<Self> {
-                self.0.checked_sub(rhs.0).map(Into::into)
             }
 
             pub fn split(&self, n: u64) -> Option<Vec<Self>> {
@@ -192,13 +158,31 @@ macro_rules! impl_money {
             }
         }
 
+        impl CheckedAdd for $name {
+             fn checked_add(&self, rhs: &Self) -> Option<Self> {
+                self.0.checked_add(rhs.0).map(Into::into)
+            }
+        }
+
+        impl CheckedSub for $name {
+            fn checked_sub(&self, rhs: &Self) -> Option<Self> {
+                self.0.checked_sub(rhs.0).map(Into::into)
+            }
+        }
+
+        impl Zero for $name {
+            fn is_zero(&self) -> bool {
+                self.0.is_zero()
+            }
+
+            fn zero() -> Self {
+                $name::from_major(0)
+            }
+        }
+
         impl Currency for $name {
             fn decimal_value(&self) -> &Decimal {
                 &self.0
-            }
-
-            fn is_zero(&self) -> bool {
-                self.0.is_zero()
             }
 
             fn is_negative(&self) -> bool {
