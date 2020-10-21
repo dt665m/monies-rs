@@ -10,7 +10,7 @@ use num_traits::{CheckedAdd, CheckedSub, Zero};
 use paste::paste;
 use rust_decimal::prelude::*;
 
-pub mod preldue {
+pub mod prelude {
     pub use super::impl_money;
     pub use paste::paste;
 }

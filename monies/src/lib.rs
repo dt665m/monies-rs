@@ -1,6 +1,6 @@
 use num_traits::{CheckedAdd, CheckedSub, Zero};
 use rust_decimal::Decimal;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 pub mod prelude {
     pub use super::{Currency, SimpleArithmetic};
