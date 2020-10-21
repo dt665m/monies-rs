@@ -13,6 +13,10 @@ use rust_decimal::prelude::*;
 pub mod prelude {
     pub use super::impl_money;
     pub use paste::paste;
+
+    pub use std::convert::{From, Into};
+    pub use std::fmt;
+    pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 }
 
 #[macro_export]
