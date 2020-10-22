@@ -1,22 +1,17 @@
 #![allow(unused_imports)]
-use monies::Currency;
-
-use std::convert::{From, Into};
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-
-use lazy_static::lazy_static;
-use num_traits::{CheckedAdd, CheckedSub, Zero};
-use paste::paste;
-use rust_decimal::prelude::*;
-
+use prelude::*;
 pub mod prelude {
     pub use super::impl_money;
-    pub use paste::paste;
+    pub use monies::{Currency, CurrencyISO};
 
     pub use std::convert::{From, Into};
     pub use std::fmt;
     pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
+    pub use lazy_static::lazy_static;
+    pub use num_traits::{CheckedAdd, CheckedSub, Zero};
+    pub use paste::paste;
+    pub use rust_decimal::prelude::*;
 }
 
 #[macro_export]
@@ -201,16 +196,18 @@ macro_rules! impl_money {
             fn is_positive(&self) -> bool {
                 self.0.is_sign_positive() && !self.0.is_zero()
             }
+        }
 
-            fn code(&self) -> &'static str {
+        impl CurrencyISO for $name {
+            fn code() -> &'static str {
                 $code
             }
 
-            fn number(&self) -> &'static str {
+            fn number() -> &'static str {
                 $number
             }
 
-            fn exponent(&self) -> u32 {
+            fn exponent() -> u32 {
                 $exponent
             }
         }

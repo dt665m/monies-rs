@@ -1,9 +1,11 @@
-use num_traits::{CheckedAdd, CheckedSub, Zero};
-use rust_decimal::Decimal;
+use std::convert::From;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+use num_traits::{CheckedAdd, CheckedSub, Zero};
+use rust_decimal::Decimal;
+
 pub mod prelude {
-    pub use super::{Currency, SimpleArithmetic};
+    pub use super::{Currency, CurrencyISO, SimpleArithmetic};
     pub use num_traits::{CheckedAdd, CheckedSub, Zero};
     pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 }
@@ -16,9 +18,12 @@ pub trait SimpleArithmetic:
     + PartialOrd<Self>
     + Ord
     + Sized
+    + Copy
+    + Default
     + CheckedAdd
     + CheckedSub
     + Zero
+    + From<Decimal>
 {
 }
 
@@ -31,22 +36,27 @@ impl<
             + PartialOrd<Self>
             + Ord
             + Sized
+            + Copy
+            + Default
             + CheckedAdd
-            + CheckedSub,
+            + CheckedSub
+            + From<Decimal>,
     > SimpleArithmetic for T
 {
 }
 
-pub trait Currency: SimpleArithmetic {
+pub trait Currency {
     fn decimal_value(&self) -> &Decimal;
 
     fn is_negative(&self) -> bool;
 
     fn is_positive(&self) -> bool;
+}
 
-    fn code(&self) -> &'static str;
+pub trait CurrencyISO {
+    fn code() -> &'static str;
 
-    fn number(&self) -> &'static str;
+    fn number() -> &'static str;
 
-    fn exponent(&self) -> u32;
+    fn exponent() -> u32;
 }
