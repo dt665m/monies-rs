@@ -1,20 +1,14 @@
 #![allow(unused_imports)]
-use monies::{Currency, CurrencyISO};
-use std::cmp::Ordering;
-use std::convert::{From, Into};
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+pub use monies::{Currency, CurrencyISO};
+pub use std::cmp::Ordering;
+pub use std::convert::{From, Into};
+pub use std::fmt;
+pub use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use lazy_static::lazy_static;
-use num_traits::{CheckedAdd, CheckedSub, Zero};
-use paste::paste;
-use rust_decimal::prelude::*;
-
-pub mod prelude {
-    pub use super::impl_money;
-    pub use monies::{Currency, CurrencyISO};
-    pub use num_traits::{CheckedAdd, CheckedSub, Zero};
-}
+pub use lazy_static::lazy_static;
+pub use num_traits::{CheckedAdd, CheckedSub, Zero};
+pub use paste::paste;
+pub use rust_decimal::prelude::*;
 
 #[macro_export]
 macro_rules! impl_money {
