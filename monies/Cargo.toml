@@ -1,10 +1,10 @@
 [package]
 name = "monies"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Denis Tsai <denistsai@aetheras.io>"]
 edition = "2018"
 
 [dependencies]
-rust_decimal = "1.7.0"
+rust_decimal = "1.9.0"
 num-traits = "0.2"
 

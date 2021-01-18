@@ -321,7 +321,8 @@ macro_rules! impl_money {
 
 #[cfg(test)]
 mod test {
-    use super::prelude::*;
+    use super::*;
+    // use num_traits::{CheckedAdd, CheckedSub, Zero};
     use serde::{Deserialize, Serialize};
 
     impl_money!(
