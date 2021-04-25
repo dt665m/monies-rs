@@ -1,14 +1,14 @@
 [package]
 name = "monies_macros"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Denis Tsai <dt665m@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 monies = { path = "../monies" }
 paste = "1.0"
-rust_decimal = "1.9"
-rust_decimal_macros = "1.9"
+rust_decimal = "1"
+rust_decimal_macros = "1"
 lazy_static = "1.4"
 num-traits = "0.2"
 

@@ -57,24 +57,24 @@ macro_rules! impl_money {
 
             pub fn round_up(&self) -> Self {
                 self.0
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::RoundUp)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::AwayFromZero)
                     .into()
             }
 
             pub fn round_down(&self) -> Self {
                 self.0
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::RoundDown)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::ToZero)
                     .into()
             }
             pub fn round_half_up(&self) -> Self {
                 self.0
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::RoundHalfUp)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::MidpointAwayFromZero)
                     .into()
             }
 
             pub fn round_half_down(&self) -> Self {
                 self.0
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::RoundHalfDown)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::MidpointTowardZero)
                     .into()
             }
 
@@ -295,7 +295,7 @@ macro_rules! impl_money {
 
             fn div(self, rhs: $type) -> Self::Output {
                 (self.0 / $crate::Decimal::from(rhs))
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::BankersRounding)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::MidpointNearestEven)
                     .into()
             }
         }
@@ -305,7 +305,7 @@ macro_rules! impl_money {
 
             fn div(self, rhs: $name) -> Self::Output {
                 ($crate::Decimal::from(self) / rhs.0)
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::BankersRounding)
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::MidpointNearestEven)
                     .into()
             }
         }
@@ -313,7 +313,7 @@ macro_rules! impl_money {
         impl $crate::DivAssign<$type> for $name {
             fn div_assign(&mut self, rhs: $type) {
                 self.0 = (self.0 / $crate::Decimal::from(rhs))
-                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::BankersRounding);
+                    .round_dp_with_strategy($exponent, $crate::RoundingStrategy::MidpointNearestEven);
             }
         }
     };
